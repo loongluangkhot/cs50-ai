@@ -1,7 +1,7 @@
 import csv
 import sys
 
-from util import Node, StackFrontier, QueueFrontier
+from util import Node, StackFrontier, QueueFrontier, EmptyFrontier
 
 # Maps names to a set of corresponding person_ids
 names = {}
@@ -12,6 +12,8 @@ people = {}
 # Maps movie_ids to a dictionary of: title, year, stars (a set of person_ids)
 movies = {}
 
+explored_states = set()
+explored_actions = set()
 
 def load_data(directory):
     """
@@ -92,9 +94,39 @@ def shortest_path(source, target):
     If no possible path, returns None.
     """
 
-    # TODO
-    raise NotImplementedError
+    source_node = Node(source, None, None)
+    frontier = QueueFrontier()
+    frontier.add(source_node)
+    try:
+        target_node = bfs_search(frontier, target)
+        trace = get_trace(source_node, target_node)
+        return trace
+    except EmptyFrontier:
+        return None
+    
+def bfs_search(frontier, target):
+    curr_node = frontier.remove()
+    explored_states.add(curr_node.state)
+    explored_actions.add(curr_node.action)
+    if curr_node.state == target:
+        return curr_node
+    else:
+        neighbors = neighbors_for_person(curr_node.state)
+        for n in neighbors:
+            n_movie = n[0]
+            n_person = n[1]
+            if n_person not in explored_states and n_movie not in explored_actions:
+                n_node = Node(n_person, curr_node, n_movie)
+                frontier.add(n_node)
+        return bfs_search(frontier, target)
 
+def get_trace(source_node, target_node):
+    trace = []
+    curr_node = target_node
+    while curr_node != source_node:
+        trace = [(curr_node.action, curr_node.state)] + trace
+        curr_node = curr_node.parent
+    return trace
 
 def person_id_for_name(name):
     """
