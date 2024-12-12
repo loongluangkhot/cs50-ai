@@ -43,11 +43,11 @@ def actions(board):
     """
     Returns set of all possible actions (i, j) available on the board.
     """
-    possible_actions = []
+    possible_actions = set()
     for i in range(3):
         for j in range(3):
             if board[i][j] == EMPTY:
-                possible_actions.append([i, j])
+                possible_actions.add((i, j))
     return possible_actions
 
 
@@ -57,10 +57,10 @@ def result(board, action):
     """
     result_board = copy.deepcopy(board)
     curr_player = player(result_board)
-    if result_board[action[0]][action[1]] == EMPTY:
-        result_board[action[0]][action[1]] = curr_player
-    else:
+    if result_board[action[0]][action[1]] != EMPTY or action[0] < 0 or action[1] < 0:
         raise Exception("Action is invalid!")
+    else:
+        result_board[action[0]][action[1]] = curr_player
     return result_board
 
 
@@ -99,7 +99,9 @@ def terminal(board):
     """
     def is_full_board():
         return len([i for i in flatten_board(board) if i == EMPTY]) == 0
-    return winner(board) or is_full_board()
+    def has_winner():
+        return winner(board) is not None
+    return has_winner() or is_full_board()
 
 
 def utility(board):
