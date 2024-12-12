@@ -15,6 +15,7 @@ movies = {}
 explored_states = set()
 explored_actions = set()
 
+
 def load_data(directory):
     """
     Load data from CSV files into memory.
@@ -104,6 +105,7 @@ def shortest_path(source, target):
     except EmptyFrontier:
         return None
     
+
 def bfs_search(frontier, target):
     curr_node = frontier.remove()
     explored_states.add(curr_node.state)
@@ -120,6 +122,7 @@ def bfs_search(frontier, target):
                 frontier.add(n_node)
         return bfs_search(frontier, target)
 
+
 def get_trace(source_node, target_node):
     trace = []
     curr_node = target_node
@@ -127,6 +130,7 @@ def get_trace(source_node, target_node):
         trace = [(curr_node.action, curr_node.state)] + trace
         curr_node = curr_node.parent
     return trace
+
 
 def person_id_for_name(name):
     """

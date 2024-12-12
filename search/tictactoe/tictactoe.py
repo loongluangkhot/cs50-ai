@@ -99,8 +99,10 @@ def terminal(board):
     """
     def is_full_board():
         return len([i for i in flatten_board(board) if i == EMPTY]) == 0
+    
     def has_winner():
         return winner(board) is not None
+    
     return has_winner() or is_full_board()
 
 
@@ -126,14 +128,14 @@ def minimax(board):
         return None
     elif player(board) == X:
         curr_actions = actions(board)
-        curr_actions_min_values = [min_value(result(board,i)) for i in curr_actions]
+        curr_actions_min_values = [min_value(result(board, i)) for i in curr_actions]
         curr_max_value = max(curr_actions_min_values)
         for i in zip(curr_actions_min_values, curr_actions):
             if i[0] == curr_max_value:
                 return i[1]
     else:
         curr_actions = actions(board)
-        curr_actions_max_values = [max_value(result(board,i)) for i in curr_actions]
+        curr_actions_max_values = [max_value(result(board, i)) for i in curr_actions]
         curr_min_value = min(curr_actions_max_values)
         for i in zip(curr_actions_max_values, curr_actions):
             if i[0] == curr_min_value:
