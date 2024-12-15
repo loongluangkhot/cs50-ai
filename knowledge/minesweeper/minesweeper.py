@@ -1,5 +1,5 @@
-import itertools
 import random
+import copy
 
 
 class Minesweeper():
@@ -94,6 +94,8 @@ class Sentence():
     def __init__(self, cells, count):
         self.cells = set(cells)
         self.count = count
+        self.safes = set()
+        self.mines = set()
 
     def __eq__(self, other):
         return self.cells == other.cells and self.count == other.count
@@ -105,27 +107,74 @@ class Sentence():
         """
         Returns the set of all cells in self.cells known to be mines.
         """
-        raise NotImplementedError
+        self.is_all_mine()
+        return self.mines
 
     def known_safes(self):
         """
         Returns the set of all cells in self.cells known to be safe.
         """
-        raise NotImplementedError
+        self.is_all_safe()
+        return self.safes
 
     def mark_mine(self, cell):
         """
         Updates internal knowledge representation given the fact that
         a cell is known to be a mine.
         """
-        raise NotImplementedError
+        if cell in self.cells:
+            self.cells.remove(cell)
+            self.mines.add(cell)
+            self.count -= 1
 
     def mark_safe(self, cell):
         """
         Updates internal knowledge representation given the fact that
         a cell is known to be safe.
         """
-        raise NotImplementedError
+        if cell in self.cells:
+            self.cells.remove(cell)
+            self.safes.add(cell)
+
+    def sanitize(self, safes, mines):
+        for safe_cell in safes:
+            self.mark_safe(safe_cell)
+        for mine_cell in mines:
+            self.mark_mine(mine_cell)
+
+    def get_new_sentence_from_potential_subset_sentence(self, potential_subset_sentence):
+        if self == potential_subset_sentence or len(self.cells) == len(potential_subset_sentence.cells):
+            return None
+        elif potential_subset_sentence.cells.issubset(self.cells):
+            new_sentence = Sentence(self.cells, self.count)
+            new_sentence.remove_subset(potential_subset_sentence)
+            return new_sentence
+        return None
+
+    def remove_subset(self, another_sentence):
+        for i in another_sentence.cells:
+            self.cells.remove(i)
+        self.count -= another_sentence.count
+
+    def is_all_safe(self):
+        val = self.count == 0 and not self.is_empty()
+        if val:
+            for safe_cell in self.cells:
+                self.safes.add(safe_cell)
+            self.cells = set()
+        return val
+
+    def is_all_mine(self):
+        val = len(self.cells) == self.count and not self.is_empty()
+        if val:
+            for mine_cell in self.cells:
+                self.mines.add(mine_cell)
+            self.cells = set()
+            self.count = 0
+        return val
+
+    def is_empty(self):
+        return len(self.cells) == 0
 
 
 class MinesweeperAI():
@@ -134,6 +183,7 @@ class MinesweeperAI():
     """
 
     def __init__(self, height=8, width=8):
+        self.board = set([(row, col) for row in range(height) for col in range(width)])
 
         # Set initial height and width
         self.height = height
@@ -182,7 +232,52 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
-        raise NotImplementedError
+        self.moves_made.add(cell)
+        self.mark_safe(cell)
+        neighbours = self.get_neighbours(cell)
+        sentence = Sentence(neighbours, count)
+        sentence.sanitize(self.safes, self.mines)
+        self.knowledge.append(sentence)
+        has_change = True
+        while has_change:
+            has_subset = self.process_potential_subset()
+            has_new_safes_or_mines = self.process_knowledge()
+            has_change = has_subset or has_new_safes_or_mines
+
+    def process_potential_subset(self):
+        new_sentences = []
+        curr_knowledge = copy.copy(self.knowledge)
+        for i in self.knowledge:
+            for j in self.knowledge:
+                new_sentence = j.get_new_sentence_from_potential_subset_sentence(i) # i is subset of j
+                if new_sentence is not None:
+                    new_sentences.append(new_sentence)
+                    if j in curr_knowledge:
+                        curr_knowledge.remove(j)
+        if len(new_sentences) > 0:
+            curr_knowledge += new_sentences
+            self.knowledge = curr_knowledge
+            return True
+        return False
+
+    def process_knowledge(self):
+        has_new_knowledge = False
+        curr_knowledge = copy.copy(self.knowledge)
+        for sentence in self.knowledge:
+            if sentence.is_all_safe():
+                has_new_knowledge = True
+                safe_cells = sentence.known_safes()
+                for safe_cell in safe_cells:
+                    self.mark_safe(safe_cell)
+            if sentence.is_all_mine():
+                has_new_knowledge = True
+                mine_cells = sentence.known_mines()
+                for mine_cell in mine_cells:
+                    self.mark_mine(mine_cell)
+            if sentence.is_empty():
+                curr_knowledge.remove(sentence)
+        self.knowledge = curr_knowledge
+        return has_new_knowledge
 
     def make_safe_move(self):
         """
@@ -193,7 +288,9 @@ class MinesweeperAI():
         This function may use the knowledge in self.mines, self.safes
         and self.moves_made, but should not modify any of those values.
         """
-        raise NotImplementedError
+        possible_cells = self.board - self.moves_made
+        safe_cells = possible_cells.intersection(self.safes)
+        return list(safe_cells)[0] if len(safe_cells) > 0 else None
 
     def make_random_move(self):
         """
@@ -202,4 +299,25 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        raise NotImplementedError
+        possible_cells = self.board - self.moves_made
+        non_mine_cells = possible_cells - self.mines
+        return list(non_mine_cells)[0] if len(non_mine_cells) > 0 else None
+
+    def get_neighbours(self, cell):
+        n = set()
+
+        def add_horizontal_neighbours(row, col, add_middle=True):
+            if add_middle:
+                n.add((row, col))
+            if col - 1 >= 0:
+                n.add((row, col - 1))
+            if col + 1 < self.width:
+                n.add((row, col + 1))
+
+        cell_row, cell_col = cell
+        add_horizontal_neighbours(cell_row, cell_col, False)
+        if cell_row - 1 >= 0:
+            add_horizontal_neighbours(cell_row - 1, cell_col)
+        if cell_row + 1 < self.height:
+            add_horizontal_neighbours(cell_row + 1, cell_col)
+        return n
