@@ -111,7 +111,8 @@ def sample_pagerank(corpus, damping_factor, n):
     page_count_map = Counter(trace)
     for i in page_count_map:
         page_count_map[i] = page_count_map[i] / n
-    return dict(page_count_map)
+    prob_dist = dict(page_count_map)
+    return prob_dist
 
 
 def iterate_pagerank(corpus, damping_factor):
@@ -124,6 +125,16 @@ def iterate_pagerank(corpus, damping_factor):
     PageRank values should sum to 1.
     """
     raise NotImplementedError
+
+def pr_formula(corpus, page, damping_factor, prob_dist):
+    all_pages = dict.keys(corpus)
+    incoming_pages = get_incoming_pages(corpus, page)
+    random_prob = (1-damping_factor) / len(all_pages)
+    linked_prob = damping_factor * sum([prob_dist[i] / len(corpus[i]) for i in incoming_pages])
+    return random_prob + linked_prob
+
+def get_incoming_pages(corpus, page):
+    return set([i for i in corpus if page in corpus[i]])
 
 
 if __name__ == "__main__":
