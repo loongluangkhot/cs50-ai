@@ -101,13 +101,13 @@ def sample_pagerank(corpus, damping_factor, n):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
+    process_corpus_for_pages_with_no_links(corpus)
     page = None
     trace = []
-    while n > 0:
+    for i in range(n):
         model = transition_model(corpus, page, damping_factor)
         page = sample_from_distribution(model)
         trace.append(page)
-        n -= 1
     page_count_map = Counter(trace)
     for i in page_count_map:
         page_count_map[i] = page_count_map[i] / n
