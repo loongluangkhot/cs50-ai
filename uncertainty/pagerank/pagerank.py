@@ -7,7 +7,6 @@ from collections import Counter
 DAMPING = 0.85
 SAMPLES = 10000
 
-import random
 
 def sample_from_distribution(distribution):
     """
@@ -28,6 +27,7 @@ def sample_from_distribution(distribution):
     for i, threshold in enumerate(cdf):
         if random_number <= threshold:
             return outcomes[i]
+
 
 def main():
     if len(sys.argv) != 2:
@@ -124,14 +124,36 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    process_corpus_for_pages_with_no_links(corpus)
+    num_pages = len(corpus)
+    curr_prob_dist = {i: 1/num_pages for i in corpus}
+    converged = False
+    while not converged:
+        next_prob_dist = {}
+        for i in corpus:
+            next_prob_dist[i] = pr_formula(corpus, i, damping_factor, curr_prob_dist)
+        converged = stop_iterate_pagerank(curr_prob_dist, next_prob_dist)
+        curr_prob_dist = next_prob_dist
+    return curr_prob_dist
+
+
+def process_corpus_for_pages_with_no_links(corpus):
+    for i in corpus:
+        if len(corpus[i]) == 0:
+            corpus[i] = set(corpus.keys())
+
+        
+def stop_iterate_pagerank(curr_prob_dist, next_prob_dist):
+    epsilon = 0.001
+    return all([abs(curr_prob_dist[i] - next_prob_dist[i]) < epsilon for i in curr_prob_dist])
+
 
 def pr_formula(corpus, page, damping_factor, prob_dist):
-    all_pages = dict.keys(corpus)
     incoming_pages = get_incoming_pages(corpus, page)
-    random_prob = (1-damping_factor) / len(all_pages)
+    random_prob = (1-damping_factor) / len(corpus)
     linked_prob = damping_factor * sum([prob_dist[i] / len(corpus[i]) for i in incoming_pages])
     return random_prob + linked_prob
+
 
 def get_incoming_pages(corpus, page):
     return set([i for i in corpus if page in corpus[i]])
