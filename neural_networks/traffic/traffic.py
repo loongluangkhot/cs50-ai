@@ -77,11 +77,13 @@ def load_data(data_dir):
     print(f"Num of categories = {len(set(labels))}")
     return (images, labels)
 
+
 def load_image(img_file_path):
     img = cv2.imread(img_file_path)
     assert img is not None
     img = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
     return img
+
 
 def get_model():
     """
@@ -94,13 +96,17 @@ def get_model():
         tf.keras.layers.Input(shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
         tf.keras.layers.Conv2D(32, (3, 3), activation='relu'),
         tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
         tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(64, activation='relu'),
         tf.keras.layers.Dense(NUM_CATEGORIES)
     ])
-    model.compile(optimizer='adam',
-              loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
-              metrics=['accuracy'])
+    model.compile(
+        optimizer='adam',
+        loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+        metrics=['accuracy'])
     
     print("Model compiled:")
     print(model.summary())
